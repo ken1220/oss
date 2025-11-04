@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>カード判定テスト (iOS)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <h1>カード判定テスト</h1>
+    <p>iPhone/iPadのカメラで画像をアップロードします。</p>
+    
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="uploadImage()">アップロードして判定</button>
+    
+    <p id="status" style="color: blue;"></p>
+    <img id="result-image" alt="判定結果画像" style="max-width: 90%; height: auto; margin-top: 20px; border: 1px solid #ccc;">
+
+    <script>
+        // ★★★★★ 後でRenderの公開URLに置き換える場所 ★★★★★
+        const API_ENDPOINT = 'PLACEHOLDER_RENDER_URL/upload'; 
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+        async function uploadImage() {
+            const input = document.getElementById('imageInput');
+            const status = document.getElementById('status');
+            const resultImg = document.getElementById('result-image');
+            
+            if (input.files.length === 0) {
+                status.textContent = '画像を選択してください。';
+                return;
+            }
+
+            status.textContent = '画像をアップロード中...';
+
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+
+            try {
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // レスポンスがJSONかどうかをチェック（エラーの場合のみJSON）
+                const contentType = response.headers.get("content-type");
+                
+                if (!response.ok && contentType && contentType.includes("application/json")) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || '不明なサーバーエラー');
+                } else if (!response.ok) {
+                    throw new Error('サーバーエラーが発生しました。');
+                }
+
+                // 成功の場合、画像ファイルを処理
+                const imageBlob = await response.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
+
+                resultImg.src = imageUrl;
+                status.textContent = '✅ 判定処理が完了し、結果画像が表示されました！';
+
+            } catch (error) {
+                status.textContent = `❌ エラーが発生しました: ${error.message}`;
+                resultImg.src = '';
+            }
+        }
+    </script>
+</body>
+</html>
